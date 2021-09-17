@@ -51,6 +51,7 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Post::class);
         $data = $request->all();
         // dd($data);
         array_push($data, $data["created_at"] = now(), $data["updated_at"] = now(), $data["user_id"] = 1);

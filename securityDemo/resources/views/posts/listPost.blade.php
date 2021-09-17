@@ -15,6 +15,7 @@
         </thead>
         <tbody>
             @foreach($list_posts as $key => $post)
+            @can('view',$post)
                 <tr>
                     <td>{{ $key+1 }}</td>
                     <td>{{ $post->title }}</td>
