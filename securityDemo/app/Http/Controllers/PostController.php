@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Post;
 
@@ -16,7 +18,7 @@ class PostController extends Controller
     {
         $this->middleware('auth');
     }
-    
+
     //
     /**
      * Display a listing of the resource.
@@ -26,10 +28,14 @@ class PostController extends Controller
     public function index()
     {
         //
-        $list_posts = Post::all();
-        // dd($list_posts);
-        return view('posts.listPost' , compact('list_posts'));
-        // return view('products.listProduct', compact('list_products'));
+        
+        if(Gate::allows('show-all-post')) {
+            $list_posts = Post::all();
+            return view('posts.listPost' , compact('list_posts'));
+        } else {
+            $list_posts = null;
+            return view('posts.listPost', compact('list_posts'))->with(['error' => 'You cannot check any post!!!']);
+        }
     }
 
     /**
@@ -51,11 +57,16 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        $data = $request->all();
-        // dd($data);
-        array_push($data, $data["created_at"] = now(), $data["updated_at"] = now(), $data["user_id"] = 1);
-        Post::create($data);
-        return redirect()->route('listPost');
+        if(Gate::allows('create-edit-delete-post')) {
+            $data = $request->all();
+        
+            array_push($data, $data["created_at"] = now(), $data["updated_at"] = now(), $data['user_id'] = Auth::id());
+            Post::create($data);
+            return redirect()->route('listPost')->with(['success' => 'Add Success']);
+        } else {
+            return redirect()->route('listPost')->with(['error' => 'You cannot create post!!!']);
+        }
+        
     }
 
     /**
@@ -79,7 +90,6 @@ class PostController extends Controller
     {
         //
         $post = Post::find($id);
-        // dd($post);
         return view('posts.editPost', compact('post'));
     }
 
@@ -93,9 +103,13 @@ class PostController extends Controller
     public function update(Request $request, $id)
     {
         //
-        $data = $request->except(['_token', '_method']);
-        Post::where('id', $id)->update($data);
-        return redirect('posts/');
+        if(Gate::allows('create-edit-delete-post')) {
+            $data = $request->except(['_token', '_method']);
+            Post::where('id', $id)->update($data);
+            return redirect()->route('listPost')->with(['success' => 'Edit Success']);
+        } else {
+            return redirect()->route('listPost')->with(['error' => 'You cannot edit post!!!']);
+        }
     }
 
     /**
@@ -107,7 +121,11 @@ class PostController extends Controller
     public function destroy($id)
     {
         //
-        Post::destroy($id);
-        return redirect('posts/');
+        if(Gate::allows('create-edit-delete-post')) {
+            Post::destroy($id);
+            return redirect()->route('listPost')->with(['success' => 'Delete Success']);
+        } else {
+            return redirect()->route('listPost')->with(['error' => 'You cannot delete post!!!']);
+        }
     }
 }
